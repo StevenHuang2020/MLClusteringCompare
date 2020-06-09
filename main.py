@@ -4,13 +4,8 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from time import time
-# from sklearn.model_selection import train_test_split, cross_val_score
-# from sklearn.metrics import precision_score, recall_score,auc
-# from sklearn.metrics import roc_curve,roc_auc_score, plot_roc_curve
-# from sklearn.metrics import confusion_matrix
-# from sklearn.metrics import accuracy_score
-# from sklearn.metrics import classification_report
 from sklearn.metrics import silhouette_score
+from sklearn.metrics import silhouette_samples
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler,MinMaxScaler
 
@@ -23,122 +18,166 @@ from modelCreate import pipeLineModel_DBSCAN_Design
 from modelCreate import pipeLineModel_Agglomerate_Design
 from modelCreate import calculateSSE,calculateDaviesBouldin
 from visualClustering import visualClusterResult
+from plotApplication import*
 
-
-def trainTest():
-    #rawdata = getWatertreatmentDataset() #getDowJonesDataset()
-    #rawdata = getFacebookLiveDataset() #getSalesTransactionsDataset() #
-    #rawdata = getIrisDataset()
-    rawdata = getDowJonesDataset()
-    #print('data.shape=',rawdata.shape)
-    trainModel(rawdata)
-    #trainPipline(rawdata)
+def trainAll():
+    datasets = prepareDataSet()
+    dfBest = pd.DataFrame()
+    for i in datasets:
+        bestLine = trainModel(i[0],i[1])
+        dfBest = dfBest.append(bestLine,ignore_index=True)
+    
+    print('-------------------best-------------')
+    dfBest.set_index(["Dataset"], inplace=True)
+    print(dfBest)
+    dfBest.to_csv('bestk.csv',index=True)
     
 def getModelMeasureByModel(data,model):
-    sse,dbValue,csm = 0,0,0     
-    k = len(list(set(model.labels_)))
-    if k>1:
-        #print(data.shape,model.labels_)
-        csm = silhouette_score(data, model.labels_, metric='sqeuclidean')
-        clf = NearestCentroid()
-        clf.fit(data, model.labels_)
-        #print(clf.centroids_)
-        sse = calculateSSE(data,model.labels_,clf.centroids_)
-        dbValue = calculateDaviesBouldin(data,model.labels_)
-        
-    print('SSE=', sse,'DB=',dbValue,'CSM=',csm,'clusters=',k)    
-    #print("Silhouette Coefficient: %0.3f" % csm)
-    #print('clusters=',k)
-    return sse,dbValue,csm,k
+    return getModelMeasure(data,model.labels_)
 
 def getModelMeasure(data,labels):
     sse,dbValue,csm = 0,0,0     
+    #k = len(np.unique(labels))
     k = len(list(set(labels)))
     if k>1:
         #print(data.shape,model.labels_)
-        csm = silhouette_score(data, labels, metric='sqeuclidean')
+        csm = silhouette_score(data, labels, metric='euclidean')
         clf = NearestCentroid()
         clf.fit(data, labels)
         #print(clf.centroids_)
         sse = calculateSSE(data,labels,clf.centroids_)
         dbValue = calculateDaviesBouldin(data,labels)
-        
+    
+    sse = round(sse,4)
+    csm = round(csm,4)
+    dbValue = round(dbValue,4)
     print('SSE=', sse,'DB=',dbValue,'CSM=',csm,'clusters=',k)    
     #print("Silhouette Coefficient: %0.3f" % csm)
     #print('clusters=',k)
     return sse,dbValue,csm,k    
 
+def descriptData(data): #after preprocessing
+    print('data.shape=',data.shape)
+    s = 0
+    for i in range(data.shape[1]):
+        column = data[:,[i]]
+        min = np.min(column)
+        max = np.max(column)
+        dis = np.abs(min-max)
+        print("column:",i,'min,max,dis=',min,max,dis)
+        s += dis
+    print('s=',s)
+
 def preprocessingData(data,N=5):
-    fit = PCA(n_components=N).fit(data)
-    data = fit.transform(data)
-    
-    #print("Explained Variance: %s" % (fit.explained_variance_))
-    #print("Explained Variance ratio: %s" % (fit.explained_variance_ratio_))
-    #print(fit.components_)
-    #print('after PCA features.shape = ', data.shape)
-    #print(data[:5])
-    scaler = StandardScaler() #MinMaxScaler()#
+    if 1:
+        fit = PCA(n_components=N).fit(data)
+        data = fit.transform(data)
+        #print("Explained Variance: %s" % (fit.explained_variance_))
+        #print("Explained Variance ratio: %s" % (fit.explained_variance_ratio_))
+        #print(fit.components_)
+        #print('after PCA features.shape = ', data.shape)
+        #print(data[:5])
+        
+    scaler = MinMaxScaler()# StandardScaler() #
     scaler.fit(data)
     data = scaler.transform(data)
     #print('\n',data[:5])    
+    #print('scaler=',data[:5])
+    descriptData(data)
     return data
 
-def trainModel(data,N=20):
+def trainModel(dataName,data,N=12): 
     data = preprocessingData(data)
-
     df = pd.DataFrame()
-    columns=['Best-K','tt(s)','SSE','DB','CSM']
-    for i in range(N):
-        wantK = 2*i+2
-        if 1:
-            model = createDBSCAN(eps=(wantK)*0.2+2,samples=2*data.shape[1])
-            modelName='DBSCAN'
-        elif 0:
-            model = createKMeans(wantK)
+    columns=['Dataset', 'Algorithm', 'K', 'tt(s)', 'SSE','DB','CSM']
+    #columns=['K','tt(s)','SSE','DB','CSM']
+    for i in range(2,N,1):  #2 N 1          
+        if 0:
+            model = createKMeans(i)
             modelName='KMeans'
-        else:
-            model = createAgglomerate(wantK)
+        elif 0:
+            model = createAgglomerate(i)
             modelName='Agglomerative'
+        else:
+            if dataName == 'DowJones':
+                minEps = 0.10 #0.24
+                maxEps = 0.24 
+                samples = 10
+            elif dataName == 'Watertreatment':
+                minEps = 0.15 #0.30
+                maxEps = 0.30
+                samples = 10 
+            elif dataName == 'FacebookLive':
+                minEps = 0.008 #0.0275 best
+                maxEps = 0.03
+                samples = 10
+            elif dataName == 'SalesTransactions':
+                minEps = 0.15 #0.248
+                maxEps = 0.248
+                samples = 10
+                
+            model = createDBSCAN(eps=minEps+(i-2)*((maxEps-minEps)/(N-3)), min_samples=samples)
+            modelName='DBSCAN'
         
         t = time()
         model.fit(data)
-        tt = time()-t
-        print("\nmodel:%s iter i=%d run in %.2fs" % (modelName,i,tt))
-        sse,dbValue,csm,k = getModelMeasureByModel(data,model)
-       
-        '''    
-        if 1: #kMeans
-            sse = model.inertia_
-            print('Sum of Squares Errors (SSE) inertia_=', sse, model.inertia_/len(data)) #sse
-            print('cluster_centers_:',model.cluster_centers_)
-            print('n_iter_:',model.n_iter_)
-            print('inertia_:',model.inertia_)
-        elif 0:#DBSCAN
-            #print('core_sample_indices_:',model.core_sample_indices_)
-            #print('components_:',model.components_)
-            print('labels_:',model.labels_)
-        else:#AgglomerativeClustering
-            print('n_clusters_:',model.n_clusters_)
-            print('n_leaves_:',model.n_leaves_)
-            print('n_connected_components_:',model.n_connected_components_)
-            #print('children_:',model.children_)
-            #print('labels_:',model.labels_)
-        '''
-         
-        line = pd.DataFrame([[k, tt,sse,dbValue,csm]], columns=columns)
-        df = df.append(line,ignore_index=True)
-
-        visualClusterResult(data,model.labels_,k,modelName+'_K_'+str(k))
+        
+        tt = round(time()-t, 4)
+        print("\ndataSet:%s model:%s iter i=%d run in %.2fs" % (dataName,modelName,i,tt))
+        sse,dbValue,csm,k = getModelMeasure(data,model.labels_)
+        
+        if modelName == 'DBSCAN' and k<=2:
+            continue
             
-    print('Train result:\n',df)
-    df = df.sort_values(by=['CSM'],ascending=False)
-    print('Train result order by CSM:\n',df)
-    df = df.sort_values(by=['SSE'],ascending=True)
-    print('Train result order by SSE:\n',df)
+        dbName = dataName + str(data.shape)
+        line = pd.DataFrame([[dbName, modelName, k, tt,sse,dbValue,csm]], columns=columns)
+        df = df.append(line,ignore_index=True)
+        #visualClusterResult(data,model.labels_,k,modelName+'_K_'+str(k))
+        plotSilhouetteValues(dataName,modelName,k, data, model.labels_)
+        #print('cluster_labels=',np.unique(model.labels_))
     
+    df.to_csv(gSaveBase + dataName+'_' + modelName+'_result.csv',index=True)
+    #print('Train result:\n',df)
+    #plotModel(dataName,modelName,df)
+    
+    #index,bestK = getBestkFromSse(dataName,modelName,df)
+    index,bestK = getBestkFromCSM(dataName,modelName,df)
+    
+    bestLine = df.iloc[index,:]
+    #print('bestLine=',index,'bestK=',bestK,'df=\n',bestLine)
+    return bestLine
+
+    #df = df.sort_values(by=['CSM'],ascending=False)
+    #print('Train result order by CSM:\n',df)
+    #df = df.sort_values(by=['SSE'],ascending=True)
+    #print('Train result order by SSE:\n',df)
     #return df.iloc[0,:]
     
-def trainPipline(data):
+def getBestkFromSse(datasetName,modelName,df): #sse gradient
+    print('df=\n',df)
+    x = df.loc[:,['K']].values #K
+    y = df.loc[:,['SSE']].values #SSE
+    z = np.zeros((len(x))) #gradient
+
+    for i in range(len(x)-1):
+        z[i+1] = y[i] - y[i+1]
+        
+    index = np.argmax(z)
+    bestK = x[index][0]
+    print('z=',z,index,bestK)
+    return index,bestK
+    
+def getBestkFromCSM(datasetName,modelName,df):
+    print('df=\n',df)
+    x = df.loc[:,['K']].values #K
+    y = df.loc[:,['CSM']].values #CSM
+ 
+    index = np.argmax(y)
+    bestK = x[index][0]
+    print('index,bestK=',index,bestK)
+    return index,bestK
+ 
+def clusteringPipline(data):
     #return pipeLineModel_KMeans_Design(data)
     #return pipeLineModel_DBSCAN_Design(data)
     return pipeLineModel_Agglomerate_Design(data)
@@ -146,39 +185,40 @@ def trainPipline(data):
 def prepareDataSet():
     dataset = []   
     dataset.append(('DowJones',getDowJonesDataset()))
-    #dataset.append(('Watertreatment', getWatertreatmentDataset()))
-    #dataset.append(('FacebookLive',getFacebookLiveDataset()))
-    #dataset.append(('SalesTransactions', getSalesTransactionsDataset()))
+    dataset.append(('Watertreatment', getWatertreatmentDataset()))
+    dataset.append(('FacebookLive',getFacebookLiveDataset()))
+    dataset.append(('SalesTransactions', getSalesTransactionsDataset()))
     return dataset
 
 def pipLinesDesign():
     pipLines = []
-    pipLines.append(('KMeans',pipeLineModel_KMeans_Design))
+    #pipLines.append(('KMeans',pipeLineModel_KMeans_Design))
     pipLines.append(('DBSCAN',pipeLineModel_DBSCAN_Design))
-    pipLines.append(('Agglomerative',pipeLineModel_Agglomerate_Design))
+    #pipLines.append(('Agglomerative',pipeLineModel_Agglomerate_Design))
     return pipLines
 
 def prepareDataSetWithPreprocess(N=5):
     dataset = []       
-    #dataset.append(('DowJones',preprocessingData(getDowJonesDataset(),N=N)))
+    dataset.append(('DowJones',preprocessingData(getDowJonesDataset(),N=N)))
     #dataset.append(('Watertreatment',preprocessingData(getWatertreatmentDataset(),N=N)))
-    dataset.append(('FacebookLive',preprocessingData(getFacebookLiveDataset(),N=N)))
+    #dataset.append(('FacebookLive',preprocessingData(getFacebookLiveDataset(),N=N)))
     #dataset.append(('SalesTransactions',preprocessingData(getSalesTransactionsDataset(),N=N)))
     return dataset
 
-def train():
+def trainPipline():
     print("*"*20,'train start','*'*20)
     t = time()
-    dataset = prepareDataSetWithPreprocess(5) #prepareDataSet()
+    dataset = prepareDataSetWithPreprocess(N=5) #prepareDataSet() #
+    
     pipLines = pipLinesDesign()
     
     df = pd.DataFrame()
     columns=['Dataset', 'Algorithm', 'Best-K', 'tt(s)', 'SSE','DB','CSM']
-    
     for pipLine in pipLines:
         for i in dataset:
             data = i[1]
-            dbName = i[0] + str(data.shape)
+            dataName = i[0]
+            dbName = dataName + str(data.shape)
     
             algorithmName = pipLine[0]
             print('start training,dataset=',dbName,'algorithm=',algorithmName,',please wait...')
@@ -194,6 +234,7 @@ def train():
             df = df.append(line,ignore_index=True)
             
             #visualClusterResult(data, labels, bestK, algorithmName + '_K_'+str(bestK))
+            plotSilhouetteValues(dataName,algorithmName,bestK, data, labels)
             #break
         
     df['Best-K'] = df['Best-K'].astype('int64')
@@ -204,84 +245,9 @@ def train():
     print("\nTotal run in %.2fs" % (time()-t))
     
 def main():
-    train()
-    #trainTest()
+    #trainPipline()
+    trainAll()
     
 if __name__ == "__main__":
     main()
-
-#---------------------------------oupt put-------------------------------  
-    
-    '''#with PCA=5 MinMaxScaler
-                      Dataset      Algorithm  Best-K      tt(s)          SSE        DB       CSM
-0            DowJones(720, 5)         KMeans       3   1.068178    35.432664  1.027498  0.581384
-1      Watertreatment(380, 5)         KMeans       2   1.058096    23.787674  1.941314  0.496058
-2       FacebookLive(7050, 5)         KMeans       2   2.250669    32.212476  0.659134  0.912606
-3   SalesTransactions(811, 5)         KMeans       2   0.926352    36.505490  0.722811  0.744269
-4            DowJones(720, 5)         DBSCAN       4   0.371581   286.959186  1.101676  0.694347
-5      Watertreatment(380, 5)         DBSCAN       2   0.157577    56.195588  2.457110  0.549143
-6       FacebookLive(7050, 5)         DBSCAN       2  18.885948  1570.566869  1.592059  0.774685
-7   SalesTransactions(811, 5)         DBSCAN       3   0.393871   365.026548  4.470893  0.791441
-8            DowJones(720, 5)  Agglomerative       2   0.183655    47.857029  1.292439  0.589845
-9      Watertreatment(380, 5)  Agglomerative       2   0.071812    26.500204  0.914561  0.738794
-10      FacebookLive(7050, 5)  Agglomerative       2  23.589775    51.927974  0.181741  0.972497
-11  SalesTransactions(811, 5)  Agglomerative       3   0.220941    57.048722  0.911441  0.748078
-
--------------------------------------
-
-
-----------order by Dataset----------
-                       Dataset      Algorithm  Best-K      tt(s)          SSE        DB       CSM
-0            DowJones(720, 5)         KMeans       3   1.068178    35.432664  1.027498  0.581384
-4            DowJones(720, 5)         DBSCAN       4   0.371581   286.959186  1.101676  0.694347
-8            DowJones(720, 5)  Agglomerative       2   0.183655    47.857029  1.292439  0.589845
-2       FacebookLive(7050, 5)         KMeans       2   2.250669    32.212476  0.659134  0.912606
-6       FacebookLive(7050, 5)         DBSCAN       2  18.885948  1570.566869  1.592059  0.774685
-10      FacebookLive(7050, 5)  Agglomerative       2  23.589775    51.927974  0.181741  0.972497
-3   SalesTransactions(811, 5)         KMeans       2   0.926352    36.505490  0.722811  0.744269
-7   SalesTransactions(811, 5)         DBSCAN       3   0.393871   365.026548  4.470893  0.791441
-11  SalesTransactions(811, 5)  Agglomerative       3   0.220941    57.048722  0.911441  0.748078
-1      Watertreatment(380, 5)         KMeans       2   1.058096    23.787674  1.941314  0.496058
-5      Watertreatment(380, 5)         DBSCAN       2   0.157577    56.195588  2.457110  0.549143
-9      Watertreatment(380, 5)  Agglomerative       2   0.071812    26.500204  0.914561  0.738794
-
-Total run in 52.66s
-
-    '''
-    
-    
-    
-    '''#without PCA
-                        Dataset      Algorithm  Best-K       tt(s)           SSE       CSM
-0             DowJones(720, 12)         KMeans       3    2.979096  1.579917e+19  0.167706
-1       Watertreatment(380, 37)         KMeans       2    2.893579  1.769930e+10  0.205539
-2         FacebookLive(7050, 8)         KMeans       2    6.062922  5.739497e+09  0.851037
-3   SalesTransactions(811, 105)         KMeans       2    4.387590  1.461950e+06  0.805480
-4             DowJones(720, 12)         DBSCAN       3    2.667292  1.185720e+20  0.371011
-5       Watertreatment(380, 37)         DBSCAN       2    2.164607  1.310175e+10  0.088081
-6         FacebookLive(7050, 8)         DBSCAN       2  104.262294  1.086716e+11  0.920020
-7   SalesTransactions(811, 105)         DBSCAN       1   15.084448  0.000000e+00  0.000000
-8             DowJones(720, 12)  Agglomerative       3    0.518780  1.643891e+19  0.066800
-9       Watertreatment(380, 37)  Agglomerative       2    0.327166  1.801777e+10  0.166698
-10        FacebookLive(7050, 8)  Agglomerative       2   44.312761  6.636813e+09  0.826064
-11  SalesTransactions(811, 105)  Agglomerative       2    1.391160  1.545233e+06  0.804826
-
-------------------------------------------------------
-
-                        Dataset      Algorithm  Best-K       tt(s)           SSE       CSM
-0             DowJones(720, 12)         KMeans       3    2.979096  1.579917e+19  0.167706
-4             DowJones(720, 12)         DBSCAN       3    2.667292  1.185720e+20  0.371011
-8             DowJones(720, 12)  Agglomerative       3    0.518780  1.643891e+19  0.066800
-2         FacebookLive(7050, 8)         KMeans       2    6.062922  5.739497e+09  0.851037
-6         FacebookLive(7050, 8)         DBSCAN       2  104.262294  1.086716e+11  0.920020
-10        FacebookLive(7050, 8)  Agglomerative       2   44.312761  6.636813e+09  0.826064
-3   SalesTransactions(811, 105)         KMeans       2    4.387590  1.461950e+06  0.805480
-7   SalesTransactions(811, 105)         DBSCAN       1   15.084448  0.000000e+00  0.000000
-11  SalesTransactions(811, 105)  Agglomerative       2    1.391160  1.545233e+06  0.804826
-1       Watertreatment(380, 37)         KMeans       2    2.893579  1.769930e+10  0.205539
-5       Watertreatment(380, 37)         DBSCAN       2    2.164607  1.310175e+10  0.088081
-9       Watertreatment(380, 37)  Agglomerative       2    0.327166  1.801777e+10  0.166698
-
-Total run in 190.61s
-    '''
     

@@ -17,9 +17,10 @@ from sklearn.metrics import calinski_harabasz_score
 from sklearn.metrics import davies_bouldin_score
 from sklearn.neighbors.nearest_centroid import NearestCentroid
 
-def createDBSCAN(eps=0.5,samples=5):
-    model = DBSCAN(eps=eps, min_samples=samples)
+def createDBSCAN(eps=0.5,min_samples=5):
+    model = DBSCAN(eps=eps, min_samples=min_samples)
     #print(model)
+    print('DBSCAN model eps=',eps,'min_samples=',min_samples)
     return model
 
 def createAgglomerate(k=2):
@@ -59,7 +60,7 @@ def s_score_silhouette(estimator, X):
     actualK = len(list(set(labels_)))
     if actualK>1:    
         #print(labels_)
-        score = silhouette_score(X, labels_, metric='sqeuclidean') #'euclidean'
+        score = silhouette_score(X, labels_, metric='euclidean') #'euclidean'
         #score = calinski_harabasz_score(X, labels_)
         #score = davies_bouldin_score(X, labels_)
     #print(score)
@@ -87,7 +88,9 @@ def calculateSSE2(data,labels,centroids):
     return sse 
 
 def calculateSSE(data,labels,centroids):
-    #print(data.shape,type(data),centroids.shape)
+    #print(data.shape,type(data),centroids.shape,labels.shape)
+    #print('labels=',labels)
+    #data = data.to_numpy()#if dataframe
     sse = 0
     for i,ct in enumerate(centroids):
         #print('i,ct=',i,ct)
@@ -100,10 +103,12 @@ def calculateDaviesBouldin(data,labels):
     return davies_bouldin_score(data, labels)
 
 def pipeLineModelDesignClustering(X_train,featureDecomposition, model, param_grid):
-    #pipe_dt = make_pipeline(StandardScaler(), model) #featureDecomposition
+    #pipe_dt = make_pipeline(StandardScaler(), model) #
+    #pipe_dt = make_pipeline(MinMaxScaler(), model) #
     #pipe_dt = make_pipeline(featureDecomposition, StandardScaler(), model)
     #pipe_dt = make_pipeline(featureDecomposition, StandardScaler(), model)
     #pipe_dt = make_pipeline(featureDecomposition, MinMaxScaler(), model)
+    #pipe_dt = make_pipeline(featureDecomposition, model)
     pipe_dt = make_pipeline(model)
     
     gs = GridSearchCV(estimator=pipe_dt,
@@ -132,69 +137,65 @@ def pipeLineModelDesignClustering(X_train,featureDecomposition, model, param_gri
 
     #print(gs.cv_results_)
     df = pd.DataFrame(gs.cv_results_)
-    print(df)
+    #print(df)
     df.to_csv('result.csv',index=True)
         
     df = df.sort_values(by=['rank_test_score'],ascending=True)
-    print('Train result order by rank_test_score:\n',df)
+    #print('Train result order by rank_test_score:\n',df)
     csm = df.iloc[0]['mean_test_score']
     print('selected CSM =', csm)
     
+    sse = sse.round(4)
+    csm = csm.round(4)
+    dbValue = dbValue.round(4)
+    tt = round(tt,4)
+    
     columns=['Best-K','tt(s)','SSE','DB','CSM']
     return pd.DataFrame([[k, tt,sse,dbValue,csm]], columns=columns),labels,k
-  
-def pipeLineModel_KMeans_Design(X_train):
-    #pca=7, n_clusters=bestk=2  #tts sse db csm  4.435309  68.396242  1.737907  0.467619
-    #pca=5, n_clusters=bestk=3  #tts sse db csm  3.559167  35.432664  1.027498  0.581384
-    #pca=12, n_clusters=bestk=2  #tts sse db csm  4.363931  96.43872  2.131834  0.408379
-    
+
+
+def pipeLineModel_KMeans_Design(X_train):    
     model = KMeans(n_clusters=3,init='k-means++', n_init=10, max_iter=300,tol=1e-04, random_state=0)
-    param_grid = [{'kmeans__n_clusters': np.arange(2,6,1)}] 
+    param_grid = [{'kmeans__n_clusters': np.arange(2,90,2)}] 
     return pipeLineModelDesignClustering(X_train, None, model, param_grid)
 
 def pipeLineModel_DBSCAN_Design(X_train):
     nFeatures = X_train.shape[1]
     print('nFeatures=',nFeatures)
-    model = DBSCAN(eps=0.2, min_samples=6, metric='euclidean')
-    
-    #pca=5,eps=0.1,minsamples=6    bestk=4  #sse db csm 104.671905  1.413722  0.34593
-    #pca=5,eps=0.2,minsamples=6    bestk=4  #sse db csm 286.959186  1.101676  0.694347
-    #pca=5,eps=0.22,minsamples=6,7  bestk=3  #sse db csm 317.76992  1.147326  0.699217 
-    #pca=5,eps=0.3, minsamples=95,96  bestk=2 #sse db csm 147.21034  1.881665  0.548519
-    
-    #pca=10,eps=0.2,minsamples=4    bestk=4  #sse db csm 96.238813  2.386751  0.239443
-    #pca=7,eps=0.2,minsamples=3    bestk=4  #sse db csm 137.094597  1.974579  0.43688
-    #pca=7,eps=0.28,minsamples=5    bestk=2  #sse db csm 160.974188  2.893825  0.55163
+    model = DBSCAN(eps=0.288, min_samples=10, metric='euclidean')
     
     param_grid = []
-    #param_grid.append({'dbscan__eps': np.linspace(0.1, 0.5,20)}) #[0~nFeatures]
-    param_grid.append({'dbscan__min_samples': np.arange(4,10,1)})
+    param_grid.append({'dbscan__eps': np.linspace(0.1, 0.4,10)}) #[0~nFeatures]
+    #param_grid.append({'dbscan__min_samples': np.arange(6,22,1)}) #2*nFeatures
     return pipeLineModelDesignClustering(X_train, None, model, param_grid)
 
-def pipeLineModel_Agglomerate_Design(X_train):
-    #pca=12, n_clusters=bestk=2  #tts sse db csm  0.622431  109.154098  0.865911  0.515185
-    #pca=7, n_clusters=bestk=2  #tts sse db csm  0.345117  81.432785  0.677056  0.447959
-    #pca=5, n_clusters=bestk=2  #tts sse db csm  0.354799  47.857029  1.292439  0.589845
-    #pca=8, n_clusters=bestk=2  #tts sse db csm  0.480715  88.761615  0.777836  0.45633
-    
+def pipeLineModel_Agglomerate_Design(X_train):    
     #featureDecomposition = PCA(n_components=5)
     model = AgglomerativeClustering(n_clusters=2, affinity='euclidean', linkage='complete') 
     param_grid = [{'agglomerativeclustering__n_clusters': range(2,6,1)}]  
     #param_grid.append({'pca__n_components': range(2,X_train.shape[1])})
     return pipeLineModelDesignClustering(X_train, None, model, param_grid)
 
-'''  
+
+
+'''
 def pipeLineModel_KMeans_Design(X_train):
-    featureDecomposition = PCA(n_components=5)
-    model = KMeans(n_clusters=2,init='k-means++', n_init=10, max_iter=300,tol=1e-04, random_state=0)
-    param_grid = [{'kmeans__n_clusters': range(2,10)}]  #[2, 3, 4, 5, 6]
-    #param_grid.append({'pca__n_components': range(2,X_train.shape[1])})
+    nFeatures = X_train.shape[1]
+    print('nFeatures=',nFeatures)
+    
+    featureDecomposition = PCA(n_components=13) #18
+    model = KMeans(n_clusters=13,init='k-means++', n_init=10, max_iter=300,tol=1e-04, random_state=0)
+    param_grid = []
+    param_grid.append({'kmeans__n_clusters': range(4,20,1)})  #[2, 3, 4, 5, 6]
+    #param_grid.append({'pca__n_components': range(2,nFeatures)})
+    #param_grid.append({'pca__n_components': range(10,25)})
     return pipeLineModelDesignClustering(X_train, featureDecomposition, model, param_grid)
 
 def pipeLineModel_DBSCAN_Design(X_train):
     featureDecomposition = PCA(n_components=5)
     model = DBSCAN(eps=0.3, min_samples=2*5, metric='euclidean')
-    param_grid = [{'dbscan__eps': np.linspace(2.0,5.0,15)}]  
+    param_grid = []
+    param_grid.append({'dbscan__eps': np.linspace(2.0,5.0,15)})
     param_grid.append({'dbscan__min_samples': np.arange(2,30,2)})
     #param_grid.append({'pca__n_components': range(2,X_train.shape[1])})
     return pipeLineModelDesignClustering(X_train, featureDecomposition, model, param_grid)
@@ -202,7 +203,8 @@ def pipeLineModel_DBSCAN_Design(X_train):
 def pipeLineModel_Agglomerate_Design(X_train):
     featureDecomposition = PCA(n_components=5)
     model = AgglomerativeClustering(n_clusters=2, affinity='euclidean', linkage='complete') 
-    param_grid = [{'agglomerativeclustering__n_clusters': range(2,10)}]  
+    param_grid = []
+    param_grid.append({'agglomerativeclustering__n_clusters': range(2,10)})
     #param_grid.append({'pca__n_components': range(2,X_train.shape[1])})
     return pipeLineModelDesignClustering(X_train, featureDecomposition, model, param_grid)
 '''

@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
+from sklearn.compose import ColumnTransformer
 
 # https://archive.ics.uci.edu/ml/datasets/Dow+Jones+Index#
 # https://archive.ics.uci.edu/ml/datasets/Facebook+Live+Sellers+in+Thailand
@@ -45,7 +46,6 @@ def getDowJonesDataset(verbose=False):
         #print(df.isnull())
         df = df.dropna()
         #print(df.isnull().sum())
-        
         #'quarter','stock','date','open','high','low','close','volume','percent_change_price','percent_change_volume_over_last_wk','previous_weeks_volume','next_weeks_open','next_weeks_close','percent_change_next_weeks_price','days_to_next_dividend','percent_return_next_dividend'
         
         df = df[['quarter','stock','open','high','low','close','volume','percent_change_price','percent_change_volume_over_last_wk','previous_weeks_volume','next_weeks_open','next_weeks_close','percent_change_next_weeks_price','days_to_next_dividend','percent_return_next_dividend']]
@@ -58,10 +58,15 @@ def getDowJonesDataset(verbose=False):
             print(df.dtypes)
             print(df.head())
             
-        le = LabelEncoder()
-        le.fit(df['stock'])
-        df['stock'] = df['stock'].map(dict(zip(le.classes_, le.transform(le.classes_))))
-
+        # le = LabelEncoder()
+        # le.fit(df['stock'])
+        # df['stock'] = df['stock'].map(dict(zip(le.classes_, le.transform(le.classes_))))
+        y = pd.get_dummies(df.stock, prefix='stock',dummy_na=False)
+        print('y.shape=',y.shape)
+        df = pd.concat([df,y],axis=1)
+        df.drop(['stock'],axis=1, inplace=True)
+        #print(df)
+        
         for i in range(ncol):
             if df.dtypes[i] == object:
                 if verbose:
@@ -74,7 +79,7 @@ def getDowJonesDataset(verbose=False):
         return df
     
     df = preProcessData(df)
-    
+
     if verbose:
         print('\nAfter process:')
         print(df.columns)
@@ -104,13 +109,11 @@ def getWatertreatmentDataset(verbose=False):
             df.loc[:,:] = df.loc[:,:][~(df.loc[:,:] == '?')]
         
         #print(df.isnull().sum())
-        df = df.dropna()
+        #df = df.dropna()
         #print(df.isnull().sum())
     
-        df = df.iloc[:,1:-1] 
-                
+        df = df.iloc[:,1:] 
         nrow, ncol = df.shape
-        
         if verbose:
             print('\nBefore process:')
             print(df.shape)
@@ -126,6 +129,11 @@ def getWatertreatmentDataset(verbose=False):
                 #df.iloc[:,i] = df.iloc[:,i].apply(lambda x: x.replace('$',''))
                 #df.iloc[:,i] = pd.to_numeric(df.iloc[:,i])
                 df.iloc[:,i] = df.iloc[:,i].astype('float64')
+        
+        # print('??=',df)
+        # print('mean=',df.mean())
+        #df = df.fillna(df.mean())
+        df = df.fillna(0)
         return df
     
     df = preProcessData(df)
@@ -149,10 +157,15 @@ def getFacebookLiveDataset(verbose=False):
        'num_comments', 'num_shares', 'num_likes', 'num_loves', 'num_wows',
        'num_hahas', 'num_sads', 'num_angrys']]
         
-        le = LabelEncoder()
-        le.fit(df['status_type'])
-        df['status_type'] = df['status_type'].map(dict(zip(le.classes_, le.transform(le.classes_))))
-                     
+        #le = LabelEncoder()
+        #le.fit(df['status_type'])
+        #df['status_type'] = df['status_type'].map(dict(zip(le.classes_, le.transform(le.classes_))))
+         
+        y = pd.get_dummies(df.status_type, prefix='status_type',dummy_na=False)
+        print('y.shape=',y.shape)
+        df = pd.concat([df,y],axis=1)
+        df.drop(['status_type'],axis=1, inplace=True)
+                    
         #print(df.isnull())
         #print(df.isnull().sum())
         df = df.dropna()      
@@ -191,7 +204,7 @@ def getSalesTransactionsDataset(verbose=False):
         #print(df.isnull().sum())
         #f = df.dropna()
         #print(df.isnull().sum())
-        df = df.iloc[:,1:-1] 
+        df = df.iloc[:,1:53] 
         nrow, ncol = df.shape
         if verbose:
             print('\nBefore process:')
@@ -221,10 +234,10 @@ def getSalesTransactionsDataset(verbose=False):
     return df
 
 def main():
-    #getDowJonesDataset()
-    #getWatertreatmentDataset()
+    #getDowJonesDataset(True)
+    getWatertreatmentDataset(True)
     #getFacebookLiveDataset(True)
-    getSalesTransactionsDataset(True)
+    #getSalesTransactionsDataset(True)
     
 if __name__ == "__main__":
     main()
