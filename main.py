@@ -8,10 +8,10 @@ from sklearn.metrics import silhouette_score
 from sklearn.metrics import silhouette_samples
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler,MinMaxScaler
+from sklearn.neighbors.nearest_centroid import NearestCentroid
 
 from getDataSet import getDowJonesDataset,getWatertreatmentDataset
 from getDataSet import getFacebookLiveDataset,getSalesTransactionsDataset,getIrisDataset
-from sklearn.neighbors.nearest_centroid import NearestCentroid
 from modelCreate import createKMeans,createAgglomerate,createDBSCAN
 from modelCreate import pipeLineModel_KMeans_Design
 from modelCreate import pipeLineModel_DBSCAN_Design
@@ -115,7 +115,7 @@ def trainModel(dataName,data,N=12):
                 minEps = 0.15 #0.248
                 maxEps = 0.248
                 samples = 10
-                
+                                                
             model = createDBSCAN(eps=minEps+(i-2)*((maxEps-minEps)/(N-3)), min_samples=samples)
             modelName='DBSCAN'
         
@@ -126,19 +126,25 @@ def trainModel(dataName,data,N=12):
         print("\ndataSet:%s model:%s iter i=%d run in %.2fs" % (dataName,modelName,i,tt))
         sse,dbValue,csm,k = getModelMeasure(data,model.labels_)
         
-        if modelName == 'DBSCAN' and k<=2:
-            continue
+        if modelName == 'DBSCAN':
+            labels = model.labels_
+            noiseN = len(np.where(labels==-1)[0])
+            #print(noiseN)
+            print('noise:',noiseN,len(labels),round(noiseN/len(labels),4),'k=',k)
+            if k<=2:
+                continue
             
         dbName = dataName + str(data.shape)
         line = pd.DataFrame([[dbName, modelName, k, tt,sse,dbValue,csm]], columns=columns)
         df = df.append(line,ignore_index=True)
         #visualClusterResult(data,model.labels_,k,modelName+'_K_'+str(k))
-        plotSilhouetteValues(dataName,modelName,k, data, model.labels_)
+        #plotSilhouetteValues(dataName,modelName,k, data, model.labels_)
         #print('cluster_labels=',np.unique(model.labels_))
     
-    df.to_csv(gSaveBase + dataName+'_' + modelName+'_result.csv',index=True)
+    #df.to_csv(gSaveBase + dataName+'_' + modelName+'_result.csv',index=True)
     #print('Train result:\n',df)
     #plotModel(dataName,modelName,df)
+    #plotModelCSM(dataName,modelName,df)
     
     #index,bestK = getBestkFromSse(dataName,modelName,df)
     index,bestK = getBestkFromCSM(dataName,modelName,df)
@@ -184,9 +190,9 @@ def clusteringPipline(data):
     
 def prepareDataSet():
     dataset = []   
-    dataset.append(('DowJones',getDowJonesDataset()))
-    dataset.append(('Watertreatment', getWatertreatmentDataset()))
-    dataset.append(('FacebookLive',getFacebookLiveDataset()))
+    #dataset.append(('DowJones',getDowJonesDataset()))
+    #dataset.append(('Watertreatment', getWatertreatmentDataset()))
+    #dataset.append(('FacebookLive',getFacebookLiveDataset()))
     dataset.append(('SalesTransactions', getSalesTransactionsDataset()))
     return dataset
 
@@ -244,9 +250,34 @@ def trainPipline():
     print('\n----------order by Dataset----------\n',df)
     print("\nTotal run in %.2fs" % (time()-t))
     
+def trainSalesTransactions():
+    data = getSalesTransactionsDataset()
+    data = preprocessingData(data)
+
+    if 0: 
+        k=3
+        model = createKMeans(k)
+        modelName = 'KMeans'
+    elif 0:
+        k=2        
+        model = createAgglomerate(k)
+        modelName = 'Agglomerate'
+    elif 1:
+        model = createDBSCAN(eps=0.248,min_samples=10) #0.248
+        modelName = 'DBSCAN'
+                
+    model.fit(data)
+    sse,dbValue,csm,k = getModelMeasure(data,model.labels_)
+    
+    if modelName == 'DBSCAN': #remove -1 label
+        k-=1
+
+    visualClusterResult(data,model.labels_,k,'SalesTransactions_'+modelName)
+    
 def main():
     #trainPipline()
-    trainAll()
+    #trainAll()
+    trainSalesTransactions()
     
 if __name__ == "__main__":
     main()

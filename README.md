@@ -12,7 +12,28 @@ KMeans, AgglomerativeClustering and DBSCAN
 
 #### main.py
 <br/>
-<img src="images/KMeans_K_2.png" width="320" height="240">
-<img src="images/KMeans_K_4.png" width="320" height="240">
-<img src="images/Agglomerative_K_4.png" width="320" height="240">
-<img src="images/Agglomerative_K_6.png" width="320" height="240">
+<img src="images/DowJones_KMeans_SSE.png" width="320" height="240">
+<img src="images/DowJones_KMeans_CSM.png" width="320" height="240">
+<img src="images/FacebookLive_KMeans_SSE.png" width="320" height="240">
+<img src="images/FacebookLive_KMeans_CSM.png" width="320" height="240">
+<img src="images/SalesTransactions_KMeans_SSE.png" width="320" height="240">
+<img src="images/SalesTransactions_KMeans_CSM.png" width="320" height="240">
+<img src="images/Watertreatment_KMeans_SSE.png" width="320" height="240">
+<img src="images/Watertreatment_KMeans_CSM.png" width="320" height="240">
+
+<img src="images/SSE.png" width="320" height="240">
+<img src="images/CSM.png" width="320" height="240">
+<img src="images/timetaken.png" width="320" height="240">
+
+<img src="images/SalesTransactions_Agglomerate_k_2.png" width="320" height="240">
+<img src="images/SalesTransactions_DBSCAN_k_2.png" width="320" height="240">
+<img src="images/SalesTransactions_KMeans_k_3.png" width="320" height="240">
+
+<img src="images/plottingAllData_PCA.png" width="320" height="240">
+<img src="images/plottingAllData_TSNE.png" width="320" height="240">
+<img src="images/PCACumulative1.png" width="320" height="240">
+
+<img src="images/Agglomerative_K_8.png" width="320" height="240">
+<img src="images/Agglomerative_K_20.png" width="320" height="240">
+<img src="images/KMeans_K_8.png" width="320" height="240">
+<img src="images/KMeans_K_20.png" width="320" height="240">
