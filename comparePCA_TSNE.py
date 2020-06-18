@@ -30,7 +30,7 @@ def visaulizeData(data,idx=3):
     
 def plottingAllData(df,title):
     global gIndex
-    sns.FacetGrid(df,hue='label',size=6).map(plt.scatter, '1st_principal','2nd_principal').add_legend()
+    sns.FacetGrid(df,hue='label',height=5).map(plt.scatter, '1st_principal','2nd_principal').add_legend()
     plt.title(title)
     plt.subplots_adjust(left=None, bottom=None, right=None, top=0.94, wspace=None, hspace=None)
     plt.savefig(gSaveBase+'plottingAllData_'+str(gIndex)+'.png')
@@ -69,10 +69,33 @@ def preprocessing(df):
     
     #PcaData(data,labels)
     #PCACumulative(data)
-    #scipyPCA(data,labels)
-    TsneData(data,labels)
+    scipyPCA(data,labels)
+    #TsneData(data,labels)
     
+def calculatePCA(data,N=784):
+    print('scipyPCA data.shape=',data.shape)
+    #co-variance of matrix
+    cov_matrix = np.matmul(data.T,data)
+    print('cov_matrix.shape=',cov_matrix.shape)
+    
+    #finding eigenvalue and corresponding vectors
+    values,vectors = eigh(cov_matrix,eigvals=(N-2,N-1)) #eigvals=(N-2,N-1)
+    print('vectors.shape=',vectors.shape)
+    vectors = vectors.T
+    print('vectors.shape=',vectors.shape)
+    print('vectors=',vectors[:,:])
+    #print('vectors=',vectors[:,-10:])
+    
+    print('values.shape=',values.shape)
+    print('values=',values)
+    
+    #projecting the original data sample on the plane formed by two principal eigen vectors by vector-vector multiplication.
+    new_cord = np.matmul(vectors,data.T)
+    print('new_cord.shape=',new_cord.shape)
+    return new_cord
+
 def scipyPCA(data,labels):
+    '''
     print('scipyPCA data.shape=',data.shape)
     #co-variance of matrix
     cov_matrix = np.matmul(data.T,data)
@@ -83,6 +106,8 @@ def scipyPCA(data,labels):
     print('vectors.shape=',vectors.shape)
     vectors = vectors.T
     print('vectors.shape=',vectors.shape)
+    print('vectors=',vectors[:,10:])
+    print('vectors=',vectors[:,-10:])
     
     print('values.shape=',values.shape)
     print('values=',values)
@@ -90,6 +115,8 @@ def scipyPCA(data,labels):
     #projecting the original data sample on the plane formed by two principal eigen vectors by vector-vector multiplication.
     new_cord = np.matmul(vectors,data.T)
     print('new_cord.shape=',new_cord.shape)
+    '''
+    new_cord = calculatePCA(data)
     
     #appending label to the 2d projected data
     #creating a new data frame for plotting the labeled points
@@ -118,9 +145,20 @@ def TsneData(data,labels):
     print(df.head())
     plottingAllData(df,'Tsne')
     
+def testPca():
+    a = np.array([[1,2,3,4],
+                  [5,6,7,12],
+                  [6,7,8,14]])
+    a = np.array([[1,2,3,4],
+                  [1,2,3,4],
+                  [1,2,3,4]])
+    new_cord = calculatePCA(a,N=4)
+    print('new_cord=',new_cord)
+    
 def main():
-    df = getData()
-    preprocessing(df)
+    #df = getData()
+    #preprocessing(df)
+    testPca()
     
 if __name__ == "__main__":
     main()

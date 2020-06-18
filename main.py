@@ -94,7 +94,7 @@ def trainModel(dataName,data,N=12):
     for i in range(2,N,1):  #2 N 1          
         if 0:
             model = createKMeans(i)
-            modelName='KMeans'
+            modelName='K-Means'
         elif 0:
             model = createAgglomerate(i)
             modelName='Agglomerative'
@@ -254,7 +254,7 @@ def trainSalesTransactions():
     data = getSalesTransactionsDataset()
     data = preprocessingData(data)
 
-    if 0: 
+    if 1: 
         k=3
         model = createKMeans(k)
         modelName = 'KMeans'
@@ -262,8 +262,8 @@ def trainSalesTransactions():
         k=2        
         model = createAgglomerate(k)
         modelName = 'Agglomerate'
-    elif 1:
-        model = createDBSCAN(eps=0.248,min_samples=10) #0.248
+    elif 0:
+        model = createDBSCAN(eps=0.247,min_samples=10) #0.248
         modelName = 'DBSCAN'
                 
     model.fit(data)
