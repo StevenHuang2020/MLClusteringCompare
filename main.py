@@ -79,8 +79,10 @@ def preprocessingData(data,N=5):
         #print(data[:5])
         
     scaler = MinMaxScaler()# StandardScaler() #
-    scaler.fit(data)
-    data = scaler.transform(data)
+    # scaler.fit(data)
+    # data = scaler.transform(data)
+    data = scaler.fit_transform(data)
+    
     #print('\n',data[:5])    
     #print('scaler=',data[:5])
     descriptData(data)
