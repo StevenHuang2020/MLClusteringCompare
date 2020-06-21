@@ -25,9 +25,12 @@ KMeans, AgglomerativeClustering and DBSCAN
 <img src="images/CSM.png" width="320" height="240">
 <img src="images/timetaken.png" width="320" height="240">
 
-<img src="images/SalesTransactions_Agglomerate_k_2.png" width="320" height="240">
-<img src="images/SalesTransactions_DBSCAN_k_2.png" width="320" height="240">
-<img src="images/SalesTransactions_KMeans_k_3.png" width="320" height="240">
+<img src="images/SalesTransactions_K-Means_PCA_k_3.png" width="320" height="240">
+<img src="images/SalesTransactions_K-Means_TSNE_k_3.png" width="320" height="240">
+<img src="images/SalesTransactions_Agglomerate_PCA_k_2.png" width="320" height="240">
+<img src="images/SalesTransactions_Agglomerate_TSNE_k_2.png" width="320" height="240">
+<img src="images/SalesTransactions_DBSCAN_PCA_k_2.png" width="320" height="240">
+<img src="images/SalesTransactions_DBSCAN_TSNE_k_2.png" width="320" height="240">
 
 <img src="images/PCA.png" width="320" height="240">
 <img src="images/TSNE.png" width="320" height="240">
