@@ -1,7 +1,9 @@
 # Clustering Algorithm Comparison [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0) ![Python Version](https://img.shields.io/badge/Python-v3.6-blue)
 
-Evaluation and comparison of three common clustering algorithms:
-KMeans, AgglomerativeClustering and DBSCAN
+Evaluation and comparison of three common clustering algorithms: <br/>
+KMeans, AgglomerativeClustering and DBSCAN.
+<br/>
+Dimensionality reduction and visualization of high-dimensional features data, PCA vs TSNE.
 
 
 #### Dataset reference
