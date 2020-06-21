@@ -3,7 +3,7 @@
 Evaluation and comparison of three common clustering algorithms: <br/>
 KMeans, AgglomerativeClustering and DBSCAN.
 <br/>
-Dimensionality reduction and visualization of high-dimensional features data, PCA vs TSNE.
+Dimension reduction and visualization of high-dimensional features data, PCA vs TSNE.
 
 
 #### Dataset reference
