@@ -8,6 +8,7 @@ from sklearn.manifold import TSNE
 
 # Generate data (swiss roll dataset)
 n_samples = 2500
+gSaveBase=r'./res/'
 
 def generate_swiss_roll_data(n_samples):
     noise = 0.05
@@ -52,7 +53,8 @@ def produce_plots(data_generator, data_generator_name):
     ax.set_ylabel('$y$')
     ax.set_zlabel('$z$')
     plt.title(title)
-    plt.savefig(data_generator_name + '.png')
+    plt.savefig(gSaveBase + data_generator_name + '.png')
+    plt.show()
 
     # Fit and plot PCA
     X_pca = decomposition.PCA(n_components=2).fit_transform(X)
@@ -60,20 +62,21 @@ def produce_plots(data_generator, data_generator_name):
     s = fig.add_subplot(1, 1, 1, xlabel='$x$', ylabel='$y$')
     s.scatter(X_pca[:, 0], X_pca[:, 1], c = X_color)
     plt.title(title + " - PCA")
-    fig.savefig(data_generator_name  + '_pca.png')
-
+    fig.savefig(gSaveBase + data_generator_name  + '_pca.png')
+    plt.show()
+    
     # Fit and plot tSNE
     X_tsne = TSNE(n_components=2).fit_transform(X)
     fig = plt.figure()
     s = fig.add_subplot(1, 1, 1, xlabel='$x$', ylabel='$y$')
     s.scatter(X_tsne[:, 0], X_tsne[:, 1], c = X_color)
     plt.title(title + " - tSNE")
-    fig.savefig(data_generator_name + '_tsne.png')
-
+    fig.savefig(gSaveBase + data_generator_name + '_tsne.png')
+    plt.show()
 
 def main():
     produce_plots(generate_digits, "digits")
-    produce_plots(generate_hand, "hand")
+    #produce_plots(generate_hand, "hand")
     produce_plots(generate_swiss_roll_data, "swiss_roll")
     produce_plots(generate_gaussian_blobs, "blobs")
     produce_plots(generate_gaussian_blobs_different, "blobs_diff")
