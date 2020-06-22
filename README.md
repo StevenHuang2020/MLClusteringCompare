@@ -38,7 +38,6 @@
 <img src="images/TSNE.png" width="320" height="240">
 <img src="images/PCACumulative.png" width="320" height="240">
 
-<img src="images/Agglomerative_K_8.png" width="320" height="240">
-<img src="images/Agglomerative_K_20.png" width="320" height="240">
-<img src="images/KMeans_K_8.png" width="320" height="240">
-<img src="images/KMeans_K_20.png" width="320" height="240">
+<img src="images/digits_pca.png" width="320" height="240">
+<img src="images/digits_tsne.png" width="320" height="240">
+
