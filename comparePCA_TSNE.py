@@ -67,10 +67,10 @@ def preprocessing(df):
     #visaulizeData(data)
     data = StandardScaler().fit_transform(data)
     
-    #PcaData(data,labels)
-    #PCACumulative(data)
+    PcaData(data,labels)
+    PCACumulative(data)
     scipyPCA(data,labels)
-    #TsneData(data,labels)
+    TsneData(data,labels)
     
 def calculatePCA(data,N=784):
     print('scipyPCA data.shape=',data.shape)
@@ -156,9 +156,9 @@ def testPca():
     print('new_cord=',new_cord)
     
 def main():
-    #df = getData()
-    #preprocessing(df)
-    testPca()
+    df = getData()
+    preprocessing(df)
+    #testPca()
     
 if __name__ == "__main__":
     main()
