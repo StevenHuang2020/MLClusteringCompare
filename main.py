@@ -68,7 +68,14 @@ def descriptData(data): #after preprocessing
         s += dis
     print('s=',s)
 
-def preprocessingData(data,N=5):
+def preprocessingData(data,N=5):        
+    scaler = MinMaxScaler()# StandardScaler() #
+    # scaler.fit(data)
+    # data = scaler.transform(data)
+    data = scaler.fit_transform(data)
+    
+    #print('\n',data[:5])    
+    #print('scaler=',data[:5])
     if 1:
         fit = PCA(n_components=N).fit(data)
         data = fit.transform(data)
@@ -78,13 +85,6 @@ def preprocessingData(data,N=5):
         #print('after PCA features.shape = ', data.shape)
         #print(data[:5])
         
-    scaler = MinMaxScaler()# StandardScaler() #
-    # scaler.fit(data)
-    # data = scaler.transform(data)
-    data = scaler.fit_transform(data)
-    
-    #print('\n',data[:5])    
-    #print('scaler=',data[:5])
     descriptData(data)
     return data
 
